@@ -1,0 +1,27 @@
+# compiled output
+**/dist
+**/node_modules
+**/build
+
+# env
+.env
+.env.local
+.env.*.local
+
+# logs
+logs
+*.log
+npm-debug.log*
+
+# os
+.DS_Store
+
+# ide
+.idea
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# temp
+tmp
+temp

@@ -1,0 +1,288 @@
+{
+  "info": {
+    "_postman_id": "7e8c4a12-3b9f-4d2e-a1c0-9f6b2d8e4a71",
+    "name": "Todo API",
+    "description": "NestJS Todo API for local development.\n\n**Cookies:** The refresh token is **not** returned in the JSON body. Login and register set an HttpOnly `refresh_token` cookie (`path=/auth`). Keep cookies enabled in Postman (default in the desktop app). Postman web needs the Interceptor. Refresh and logout only work after a successful login/register in the same session.\n\n**Dates:** Each todo belongs to one calendar day (`taskDate`, YYYY-MM-DD). `GET /todos?date=YYYY-MM-DD` lists that day. If `date` is omitted, the API defaults to today.\n\n**Suggested order:**\n1. Register or Login (saves `accessToken`)\n2. Create todo (saves `todoId`)\n3. Get todos for a date\n4. Update todo\n5. Complete/uncomplete todo\n6. Soft delete todo\n\nSwagger: http://localhost:3000/api/docs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "todoId",
+      "value": ""
+    },
+    {
+      "key": "taskDate",
+      "value": "2026-08-20"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try {",
+                  "  const json = pm.response.json();",
+                  "  if (json.accessToken) {",
+                  "    pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "    pm.environment.set('accessToken', json.accessToken);",
+                  "  }",
+                  "  if (json.refreshToken) {",
+                  "    pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                  "    pm.environment.set('refreshToken', json.refreshToken);",
+                  "  }",
+                  "} catch (e) {}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"you@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/register",
+            "description": "Creates a user. Returns `{ accessToken, user }` and sets the HttpOnly `refresh_token` cookie. Change the email if this address is already registered."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try {",
+                  "  const json = pm.response.json();",
+                  "  if (json.accessToken) {",
+                  "    pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "    pm.environment.set('accessToken', json.accessToken);",
+                  "  }",
+                  "  if (json.refreshToken) {",
+                  "    pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                  "    pm.environment.set('refreshToken', json.refreshToken);",
+                  "  }",
+                  "} catch (e) {}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"you@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Returns `{ accessToken, user }` and sets the HttpOnly `refresh_token` cookie. The test script saves `accessToken` (and `refreshToken` if the body ever includes it)."
+          }
+        },
+        {
+          "name": "Refresh token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try {",
+                  "  const json = pm.response.json();",
+                  "  if (json.accessToken) {",
+                  "    pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "    pm.environment.set('accessToken', json.accessToken);",
+                  "  }",
+                  "  if (json.refreshToken) {",
+                  "    pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                  "    pm.environment.set('refreshToken', json.refreshToken);",
+                  "  }",
+                  "} catch (e) {}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/refresh",
+            "description": "Uses the HttpOnly `refresh_token` cookie (not a Bearer token). Run Register or Login first with cookies enabled. Rotates the cookie and returns a new `accessToken`."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/logout",
+            "description": "Uses the `refresh_token` cookie, clears the stored hash, and deletes the cookie. Expect 204 No Content."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Todos",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{accessToken}}",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "Get todos (default today)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/todos",
+            "description": "Lists the current user's todos for today. Soft-deleted items are omitted. If `date` is omitted, the API defaults to today."
+          }
+        },
+        {
+          "name": "Get todos by date",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/todos?date={{taskDate}}",
+            "description": "Lists the current user's todos for `date=YYYY-MM-DD`. Soft-deleted items are omitted."
+          }
+        },
+        {
+          "name": "Get one todo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/todos/{{todoId}}",
+            "description": "Returns one todo by id. Run Create todo first so `todoId` is set."
+          }
+        },
+        {
+          "name": "Create todo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try {",
+                  "  const json = pm.response.json();",
+                  "  if (json.id) {",
+                  "    pm.collectionVariables.set('todoId', json.id);",
+                  "    pm.environment.set('todoId', json.id);",
+                  "  }",
+                  "} catch (e) {}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Buy milk\",\n  \"description\": \"2 liters, low fat\",\n  \"taskDate\": \"{{taskDate}}\"\n}"
+            },
+            "url": "{{baseUrl}}/todos",
+            "description": "Creates a todo. `description` is optional. `taskDate` is YYYY-MM-DD; omit it to default to today. The test script saves the new `id` as `todoId`."
+          }
+        },
+        {
+          "name": "Update todo",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Buy oat milk\",\n  \"description\": \"1 liter\",\n  \"taskDate\": \"{{taskDate}}\"\n}"
+            },
+            "url": "{{baseUrl}}/todos/{{todoId}}",
+            "description": "Updates title, description, and/or taskDate. Returns the full todo object."
+          }
+        },
+        {
+          "name": "Complete/uncomplete todo",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"completed\": true\n}"
+            },
+            "url": "{{baseUrl}}/todos/{{todoId}}",
+            "description": "Toggles completion. Send `{ \"completed\": true }` or `{ \"completed\": false }`. Returns the full todo (title and description stay present)."
+          }
+        },
+        {
+          "name": "Soft delete todo",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/todos/{{todoId}}",
+            "description": "Soft-deletes the todo (`deletedAt`). Expect 204. The row stays in MySQL and is hidden from GET endpoints."
+          }
+        }
+      ]
+    }
+  ]
+}

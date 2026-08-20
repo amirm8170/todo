@@ -1,0 +1,32 @@
+import { Component, type ErrorInfo, type ReactNode } from 'react';
+
+type Props = { children: ReactNode };
+type State = { error: Error | null };
+
+export class ErrorBoundary extends Component<Props, State> {
+  state: State = { error: null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('App render error', error, info.componentStack);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="boot-screen">
+          <h1>Something went wrong</h1>
+          <p>{this.state.error.message}</p>
+          <button className="btn btn-primary" type="button" onClick={() => window.location.reload()}>
+            Reload
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
