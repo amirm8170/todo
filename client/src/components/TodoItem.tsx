@@ -85,6 +85,10 @@ export function TodoItem({
   }
 
   useEffect(() => {
+    if (falling) setMenuOpen(false);
+  }, [falling]);
+
+  useEffect(() => {
     if (!menuOpen) return;
 
     placeMenu();
@@ -207,10 +211,10 @@ export function TodoItem({
 
 function KebabIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-      <circle cx="12" cy="5" r="1.8" fill="currentColor" />
-      <circle cx="12" cy="12" r="1.8" fill="currentColor" />
-      <circle cx="12" cy="19" r="1.8" fill="currentColor" />
-    </svg>
+    <span className="kebab" aria-hidden="true">
+      <span className="kebab-dot" data-fall="dot" />
+      <span className="kebab-dot" data-fall="dot" />
+      <span className="kebab-dot" data-fall="dot" />
+    </span>
   );
 }

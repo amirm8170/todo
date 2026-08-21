@@ -498,12 +498,12 @@ textarea:focus {
   padding-top: 0.35rem;
 }
 
-.todo-row.is-falling .todo-copy {
+.todo-row.is-falling .todo-copy,
+.todo-row.is-falling .todo-menu {
   visibility: hidden;
 }
 
-.todo-row.is-falling .todo-check-wrap,
-.todo-row.is-falling .todo-menu {
+.todo-row.is-falling .todo-check-wrap {
   opacity: 0;
 }
 
@@ -566,6 +566,24 @@ textarea:focus {
   position: relative;
   display: flex;
   justify-content: flex-end;
+}
+
+.kebab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 18px;
+  height: 18px;
+}
+
+.kebab-dot {
+  display: block;
+  width: 3.6px;
+  height: 3.6px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .menu-btn {
@@ -883,6 +901,12 @@ textarea:focus {
   color: var(--text);
   pointer-events: none;
   will-change: transform, opacity;
+}
+
+.fall-dot {
+  border-radius: 50%;
+  background: #161616;
+  color: transparent;
 }
 
 @media (hover: hover) and (pointer: fine) {

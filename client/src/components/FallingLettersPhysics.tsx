@@ -15,10 +15,13 @@ function randBetween(min: number, max: number) {
   return min + Math.random() * (max - min);
 }
 
+export type ParticleKind = 'letter' | 'dot';
+
 export type LetterSpawn = {
   id: string;
   todoId: string;
   date: string;
+  kind: ParticleKind;
   ch: string;
   x: number;
   y: number;
@@ -29,9 +32,16 @@ export type LetterSpawn = {
   delay: number;
 };
 
+export type RestoreTarget = {
+  id: string;
+  kind: ParticleKind;
+  x: number;
+  y: number;
+};
+
 export type RestoreFlight = {
   todoId: string;
-  targets: Array<{ id: string; x: number; y: number }>;
+  targets: RestoreTarget[];
   fallback: { x: number; y: number };
 };
 
@@ -39,6 +49,27 @@ type SimLetter = LetterSpawn & {
   body: Matter.Body | null;
   restoring: boolean;
 };
+
+function isDotNode(node: HTMLElement) {
+  return node.dataset.fall === 'dot';
+}
+
+function centerInPhone(rect: DOMRect, phoneRect: DOMRect, width: number, height: number) {
+  return {
+    x: rect.left - phoneRect.left + width / 2,
+    y: rect.top - phoneRect.top + height / 2,
+  };
+}
+
+function measureDot(node: HTMLElement, phoneRect: DOMRect) {
+  const rect = node.getBoundingClientRect();
+  const size = Math.max(7, rect.width, rect.height);
+  return {
+    ...centerInPhone(rect, phoneRect, rect.width, rect.height),
+    width: size,
+    height: size,
+  };
+}
 
 export function collectLetterSpawns(
   row: HTMLElement,
@@ -48,63 +79,121 @@ export function collectLetterSpawns(
 ): LetterSpawn[] {
   const phoneRect = phone.getBoundingClientRect();
   const nodes = row.querySelectorAll<HTMLElement>('[data-fall]');
-  const letters: LetterSpawn[] = [];
+  const particles: LetterSpawn[] = [];
+  let letterIndex = 0;
+  let dotIndex = 0;
 
-  nodes.forEach((node, index) => {
-    if (letters.length >= MAX_FALL_LETTERS) return;
+  nodes.forEach((node) => {
+    if (isDotNode(node)) {
+      const measured = measureDot(node, phoneRect);
+      particles.push({
+        id: `${todoId}-dot-${dotIndex}-${Math.round(measured.x)}-${Math.round(measured.y)}`,
+        todoId,
+        date,
+        kind: 'dot',
+        ch: '',
+        x: measured.x,
+        y: measured.y,
+        width: measured.width,
+        height: measured.height,
+        fontSize: '0',
+        fontWeight: '400',
+        delay: dotIndex * 20,
+      });
+      dotIndex += 1;
+      return;
+    }
+
+    if (letterIndex >= MAX_FALL_LETTERS) return;
     const ch = node.textContent ?? '';
     if (!ch.trim()) return;
     const rect = node.getBoundingClientRect();
     const width = Math.max(9, rect.width);
     const height = Math.max(13, rect.height);
     const style = window.getComputedStyle(node);
-    letters.push({
-      id: `${todoId}-${index}-${Math.round(rect.left)}-${Math.round(rect.top)}`,
+    const center = centerInPhone(rect, phoneRect, width, height);
+    particles.push({
+      id: `${todoId}-${letterIndex}-${Math.round(rect.left)}-${Math.round(rect.top)}`,
       todoId,
       date,
+      kind: 'letter',
       ch,
-      x: rect.left - phoneRect.left + width / 2,
-      y: rect.top - phoneRect.top + height / 2,
+      x: center.x,
+      y: center.y,
       width,
       height,
       fontSize: style.fontSize,
       fontWeight: style.fontWeight,
-      delay: index * 20,
+      delay: letterIndex * 20,
     });
+    letterIndex += 1;
   });
 
-  return letters;
+  return particles;
 }
 
 export function collectRestoreTargets(
   row: HTMLElement,
   phone: HTMLElement,
-): Array<{ id: string; x: number; y: number }> {
+): RestoreTarget[] {
   const phoneRect = phone.getBoundingClientRect();
   const nodes = row.querySelectorAll<HTMLElement>('[data-fall]');
-  const targets: Array<{ id: string; x: number; y: number }> = [];
+  const targets: RestoreTarget[] = [];
+  let letterIndex = 0;
+  let dotIndex = 0;
 
-  nodes.forEach((node, index) => {
+  nodes.forEach((node) => {
+    if (isDotNode(node)) {
+      const measured = measureDot(node, phoneRect);
+      targets.push({
+        id: `${row.dataset.todoId ?? 'todo'}-dot-${dotIndex}`,
+        kind: 'dot',
+        x: measured.x,
+        y: measured.y,
+      });
+      dotIndex += 1;
+      return;
+    }
+
     const ch = node.textContent ?? '';
     if (!ch.trim()) return;
     const rect = node.getBoundingClientRect();
     const width = Math.max(9, rect.width);
     const height = Math.max(13, rect.height);
+    const center = centerInPhone(rect, phoneRect, width, height);
     targets.push({
-      id: `${index}`,
-      x: rect.left - phoneRect.left + width / 2,
-      y: rect.top - phoneRect.top + height / 2,
+      id: `${letterIndex}`,
+      kind: 'letter',
+      x: center.x,
+      y: center.y,
     });
+    letterIndex += 1;
   });
 
-  if (targets.length === 0) {
+  if (!targets.some((target) => target.kind === 'letter')) {
     const copy = row.querySelector<HTMLElement>('.todo-copy') ?? row;
     const rect = copy.getBoundingClientRect();
     targets.push({
       id: 'copy',
+      kind: 'letter',
       x: rect.left - phoneRect.left + Math.min(48, rect.width / 2),
       y: rect.top - phoneRect.top + Math.min(18, rect.height / 2),
     });
+  }
+
+  if (!targets.some((target) => target.kind === 'dot')) {
+    const menu = row.querySelector<HTMLElement>('.menu-btn') ?? row;
+    const rect = menu.getBoundingClientRect();
+    const cx = rect.left - phoneRect.left + rect.width / 2;
+    const cy = rect.top - phoneRect.top + rect.height / 2;
+    for (let index = 0; index < 3; index += 1) {
+      targets.push({
+        id: `dot-${index}`,
+        kind: 'dot',
+        x: cx,
+        y: cy - 6 + index * 6,
+      });
+    }
   }
 
   return targets;
@@ -132,6 +221,7 @@ export function collectFloorSpawns(
       id: `${todoId}-seed-${index}`,
       todoId,
       date,
+      kind: 'letter',
       ch: chars[index],
       x: randBetween(left, right),
       y: height - randBetween(48, 110),
@@ -139,6 +229,23 @@ export function collectFloorSpawns(
       height: h,
       fontSize: index < 32 ? '1rem' : '0.86rem',
       fontWeight: index < 32 ? '500' : '400',
+      delay: index * 6,
+    });
+  }
+
+  for (let index = 0; index < 3; index += 1) {
+    letters.push({
+      id: `${todoId}-seed-dot-${index}`,
+      todoId,
+      date,
+      kind: 'dot',
+      ch: '',
+      x: randBetween(left, right),
+      y: height - randBetween(48, 110),
+      width: 8,
+      height: 8,
+      fontSize: '0',
+      fontWeight: '400',
       delay: index * 6,
     });
   }
@@ -323,20 +430,24 @@ export function FallingLettersPhysics({
       const timeout = window.setTimeout(() => {
         const current = sim.get(spawn.id);
         if (!current || current.body || !engineRef.current) return;
-        const body = Matter.Bodies.rectangle(
-          spawn.x,
-          spawn.y,
-          spawn.width,
-          spawn.height,
-          {
-            restitution: 0.34,
-            friction: 0.42,
-            frictionAir: 0.01,
-            density: 0.002,
-            slop: 0.04,
-            label: spawn.todoId,
-          },
-        );
+        const material = {
+          restitution: 0.34,
+          friction: 0.42,
+          frictionAir: 0.01,
+          density: 0.002,
+          slop: 0.04,
+          label: spawn.todoId,
+        };
+        const body =
+          spawn.kind === 'dot'
+            ? Matter.Bodies.circle(spawn.x, spawn.y, spawn.width / 2, material)
+            : Matter.Bodies.rectangle(
+                spawn.x,
+                spawn.y,
+                spawn.width,
+                spawn.height,
+                material,
+              );
         Matter.Body.setVelocity(body, {
           x: randBetween(-2.2, 2.2),
           y: randBetween(0.4, 2.2),
@@ -376,6 +487,7 @@ export function FallingLettersPhysics({
     let cancelled = false;
     const start = performance.now();
     const mergeStart = 1 - TODO_RESTORE_MERGE_MS / TODO_ANIMATION_DURATION;
+    const kindIndex = { letter: 0, dot: 0 };
     letters.forEach((letter, index) => {
       letter.restoring = true;
       if (letter.body) {
@@ -385,9 +497,12 @@ export function FallingLettersPhysics({
       const fromX = letter.body?.position.x ?? letter.x;
       const fromY = letter.body?.position.y ?? letter.y;
       const fromAngle = letter.body?.angle ?? 0;
+      const kindTargets = restore.targets.filter(
+        (item) => item.kind === letter.kind,
+      );
       const target =
         restore.targets.find((item) => item.id === letter.id) ??
-        restore.targets[index];
+        kindTargets[kindIndex[letter.kind]++];
       const toX =
         target?.x ?? restore.fallback.x + (index % 10) * 7 - 24;
       const toY =
@@ -424,7 +539,7 @@ export function FallingLettersPhysics({
         return (
           <span
             key={id}
-            className="fall-letter"
+            className={letter.kind === 'dot' ? 'fall-letter fall-dot' : 'fall-letter'}
             ref={(node) => {
               if (node) nodesRef.current.set(id, node);
               else nodesRef.current.delete(id);
@@ -433,13 +548,13 @@ export function FallingLettersPhysics({
               {
                 width: letter.width,
                 height: letter.height,
-                fontSize: letter.fontSize,
-                fontWeight: letter.fontWeight,
+                fontSize: letter.kind === 'dot' ? undefined : letter.fontSize,
+                fontWeight: letter.kind === 'dot' ? undefined : letter.fontWeight,
                 transform: `translate3d(${letter.x - letter.width / 2}px, ${letter.y - letter.height / 2}px, 0)`,
               } as CSSProperties
             }
           >
-            {letter.ch}
+            {letter.kind === 'dot' ? null : letter.ch}
           </span>
         );
       })}
