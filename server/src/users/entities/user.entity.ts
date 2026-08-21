@@ -7,7 +7,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Todo } from '../todos/todo.entity';
+import { Todo } from '../../todos/entities/todo.entity';
 
 @Entity('users')
 export class User {

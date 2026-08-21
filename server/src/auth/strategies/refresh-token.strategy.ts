@@ -3,12 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import type { Request } from 'express';
 import { Strategy } from 'passport-jwt';
+import type { JwtPayload } from '../../common/types/jwt-payload.type';
 import { UsersService } from '../../users/users.service';
-
-type JwtPayload = {
-  sub: string;
-  email: string;
-};
 
 function readRefreshCookie(request: Request): string | null {
   const token: unknown = request.cookies?.refresh_token;

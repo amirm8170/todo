@@ -14,6 +14,38 @@ npm run start:dev
 
 API: [http://localhost:3000](http://localhost:3000)
 
+## Folder structure
+
+```text
+server/src/
+  auth/
+    auth.controller.ts      HTTP routes for register, login, refresh, logout
+    auth.module.ts
+    auth.service.ts         Password hashing and JWT cookies
+    dto/                    Login and register request bodies
+    guards/                 Access-token and refresh-cookie guards
+    strategies/             Passport JWT strategies
+  users/
+    users.module.ts
+    users.service.ts
+    entities/
+      user.entity.ts        `users` table
+  todos/
+    todos.controller.ts     HTTP routes for CRUD
+    todos.module.ts
+    todos.service.ts        Ownership, date filter, soft delete
+    dto/                    Create and update request bodies
+    entities/
+      todo.entity.ts        `todos` table (`taskDate`, `deletedAt`)
+  common/
+    decorators/             Shared helpers such as `@CurrentUser()`
+    types/                  Shared types such as the JWT payload
+  app.module.ts
+  main.ts                   Bootstrap, CORS, Swagger at `/api/docs`
+```
+
+Controllers handle HTTP only. Services hold business logic. DTOs validate bodies. Entities define the MySQL models. Guards and strategies protect routes. TypeORM loads entities through each module's `TypeOrmModule.forFeature(...)` (`autoLoadEntities: true`).
+
 ## Postman
 
 A collection and a local environment live in `postman/`:

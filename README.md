@@ -17,12 +17,21 @@ You can run it with Docker Compose or start the server and client separately.
 project-root/
   server/                 NestJS API
     src/
-      auth/
+      auth/               Login, register, refresh, logout
+        dto/
+        guards/
+        strategies/
       users/
+        entities/         User TypeORM model
       todos/
-      common/decorators/
+        dto/
+        entities/         Todo TypeORM model
+      common/
+        decorators/       Shared request helpers
+        types/            Shared TypeScript types
       app.module.ts
       main.ts
+    postman/              Collection and local environment
     package.json
     Dockerfile
     .env.example
@@ -58,7 +67,7 @@ Each request moves inward, one layer at a time:
    Business logic: hash passwords, create tokens, make sure a todo belongs to the current user.
 
 5. **Entity layer**  
-   TypeORM models for the `users` and `todos` tables.
+   TypeORM models in `users/entities/` and `todos/entities/` for the `users` and `todos` tables.
 
 6. **Database layer**  
    MySQL, reached through TypeORM.

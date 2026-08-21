@@ -4,8 +4,8 @@ import { Raw, Repository } from 'typeorm';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import type { PublicTodo } from './dto/todo-response';
 import { UpdateTodoDto } from './dto/update-todo.dto';
+import { Todo } from './entities/todo.entity';
 import { todayDateOnly, toDateOnly } from './task-date';
-import { Todo } from './todo.entity';
 
 @Injectable()
 export class TodosService {
